@@ -18,12 +18,13 @@ package gowarc
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"regexp"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -446,13 +447,70 @@ func TestWarcFileWriter_Write(t *testing.T) {
 			[]int{2, 2},
 			false,
 		},
+		{
+			"Custom parameter in pattern",
+			1,
+			false,
+			args{
+				fileName:             "foo.warc",
+				compress:             false,
+				maxConcurrentWriters: 1,
+			},
+			[]file{
+				{pattern: "foo-20010912053020-0001-10\\.10\\.10\\.10-customparam.warc", size: uncompressedRecordSize},
+			},
+			[]int{1, 1},
+			false,
+		},
+		{
+			"Default parameters override custom parameter",
+			1,
+			false,
+			args{
+				fileName:             "foo.warc",
+				compress:             false,
+				maxConcurrentWriters: 1,
+			},
+			[]file{
+				{pattern: "foo-20010912053020-0001-10\\.10\\.10\\.10.warc", size: uncompressedRecordSize},
+			},
+			[]int{1, 1},
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert := assert.New(t)
 
 			testdir := "tmp-test"
-			nameGenerator := &PatternNameGenerator{Prefix: "foo-", Directory: testdir, Pattern: "%{prefix}s%{ts}s-%04{serial}d-10.10.10.10.warc"}
+			var nameGenerator *PatternNameGenerator
+
+			switch tt.name {
+			case "Custom parameter in pattern":
+				nameGenerator = &PatternNameGenerator{
+					Prefix:    "foo-",
+					Directory: testdir,
+					Pattern:   "%{prefix}s%{ts}s-%04{serial}d-10.10.10.10-%{custom}s.warc",
+					Params: map[string]interface{}{
+						"custom": "customparam",
+					},
+				}
+			case "Default parameters override custom parameter":
+				nameGenerator = &PatternNameGenerator{
+					Prefix:    "foo-",
+					Directory: testdir,
+					Pattern:   "%{prefix}s%{ts}s-%04{serial}d-10.10.10.10.warc",
+					Params: map[string]interface{}{
+						"prefix": "override",
+					},
+				}
+			default:
+				nameGenerator = &PatternNameGenerator{
+					Prefix:    "foo-",
+					Directory: testdir,
+					Pattern:   "%{prefix}s%{ts}s-%04{serial}d-10.10.10.10.warc",
+				}
+			}
 
 			assert.NoError(os.Mkdir(testdir, 0755))
 			w := NewWarcFileWriter(

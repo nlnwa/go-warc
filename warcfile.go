@@ -56,12 +56,12 @@ type WarcFileNameGenerator interface {
 //   - host     - host name of the node
 //   - hostOrIp - host name of the node, falling back to IP address if host name could not be resolved
 type PatternNameGenerator struct {
-	Directory string // Directory to store warcfiles. Defaults to the empty string
-	Prefix    string // Prefix available to be used in pattern. Defaults to the empty string
-	Serial    int32  // Serial number available for use in pattern. It is atomically increased with every generated file name.
-	Pattern   string // Pattern for generated file name. Defaults to: "%{prefix}s%{ts}s-%04{serial}d-%{hostOrIp}s.%{ext}s"
-	Extension string // Extension for file name. Defaults to: "warc"
-	params    map[string]interface{}
+	Directory string                 // Directory to store warcfiles. Defaults to the empty string
+	Prefix    string                 // Prefix available to be used in pattern. Defaults to the empty string
+	Serial    int32                  // Serial number available for use in pattern. It is atomically increased with every generated file name.
+	Pattern   string                 // Pattern for generated file name. Defaults to: "%{prefix}s%{ts}s-%04{serial}d-%{hostOrIp}s.%{ext}s"
+	Extension string                 // Extension for file name. Defaults to: "warc"
+	Params    map[string]interface{} // Parameters available to be used in pattern. If a custom parameter has the same key as a predefined field (prefix, ext, etc), the predefined field will take precedence
 }
 
 const (
@@ -83,21 +83,28 @@ func (g *PatternNameGenerator) NewWarcfileName() (string, string) {
 	if g.Extension == "" {
 		g.Extension = defaultExtension
 	}
-	if g.params == nil {
-		g.params = map[string]interface{}{
-			"prefix":   g.Prefix,
-			"ext":      g.Extension,
-			"ip":       ip(),
-			"host":     host(),
-			"hostOrIp": hostOrIp(),
+
+	// Initialize parameter map with any custom parameters
+	p := make(map[string]interface{})
+	if g.Params != nil {
+		for k, v := range g.Params {
+			p[k] = v
 		}
 	}
 
-	p := map[string]interface{}{
-		"ts":     timestamp.UTC14(now()),
-		"serial": atomic.AddInt32(&g.Serial, 1),
+	// Built-in parameters which take precedence over any custom parameters
+	defaultParams := map[string]interface{}{
+		"ts":       timestamp.UTC14(now()),
+		"serial":   atomic.AddInt32(&g.Serial, 1),
+		"prefix":   g.Prefix,
+		"ext":      g.Extension,
+		"ip":       ip(),
+		"host":     host(),
+		"hostOrIp": hostOrIp(),
 	}
-	for k, v := range g.params {
+
+	// Add default parameters, overriding any custom parameters with the same key
+	for k, v := range defaultParams {
 		p[k] = v
 	}
 
