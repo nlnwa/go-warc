@@ -836,7 +836,7 @@ func Test_unmarshaler_Unmarshal(t *testing.T) {
 					"Referer: http://www.archive.org/\r\n" +
 					"Host: www.archive.org\r\n" +
 					"Cookie: PHPSESSID=009d7bb11022f80605aa87e18224d824\r\n",
-				&Validation{missingEndOfHeaders},
+				&Validation{errMissingEndOfHeaders},
 				true,
 			},
 			0,

@@ -195,7 +195,7 @@ func TestRecordBuilder(t *testing.T) {
 					"Referer: http://example.com/foo.html\n" +
 					"Connection: close\n" +
 					"User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36\n",
-				&Validation{missingEndOfHeaders},
+				&Validation{errMissingEndOfHeaders},
 				true,
 			},
 			false,

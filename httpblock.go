@@ -42,7 +42,7 @@ type HttpResponseBlock interface {
 	HttpHeader() *http.Header
 }
 
-var missingEndOfHeaders = errors.New("missing line separator at end of http headers")
+var errMissingEndOfHeaders = errors.New("missing line separator at end of http headers")
 
 type httpRequestBlock struct {
 	opts                *warcRecordOptions
@@ -335,7 +335,7 @@ func headerBytes(r buffer) ([]byte, error) {
 	}
 	var err error
 	if !sepFound {
-		err = missingEndOfHeaders
+		err = errMissingEndOfHeaders
 	}
 	return result.Bytes(), err
 }
@@ -369,7 +369,7 @@ func newHttpBlock(opts *warcRecordOptions, wf *WarcFields, r io.Reader, blockDig
 		}
 	}
 
-	if herr == missingEndOfHeaders && opts.fixSyntaxErrors {
+	if herr == errMissingEndOfHeaders && opts.fixSyntaxErrors {
 		// Fix header and update content-length field
 		hb = append(hb, '\r', '\n')
 		l, _ := wf.GetInt64(ContentLength)
@@ -396,7 +396,7 @@ func newHttpBlock(opts *warcRecordOptions, wf *WarcFields, r io.Reader, blockDig
 			payloadDigest:   payloadDigest,
 		}
 
-		if herr == missingEndOfHeaders && !opts.fixSyntaxErrors {
+		if herr == errMissingEndOfHeaders && !opts.fixSyntaxErrors {
 			// We have to fix the header for parsing even if we don't fix the record
 			hb = append(hb, '\r', '\n')
 		}
@@ -418,7 +418,7 @@ func newHttpBlock(opts *warcRecordOptions, wf *WarcFields, r io.Reader, blockDig
 			payloadDigest:   payloadDigest,
 		}
 
-		if herr == missingEndOfHeaders && !opts.fixSyntaxErrors {
+		if herr == errMissingEndOfHeaders && !opts.fixSyntaxErrors {
 			// We have to fix the header for parsing even if we don't fix the record
 			hb = append(hb, '\r', '\n')
 		}
